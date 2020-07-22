@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30104.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebServer", "WebServer\WebServer.csproj", "{70C60099-FA49-468F-8877-A89E6CF6EF0F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{83E130AF-87CF-4BEC-B058-E43E22C60174}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaCommon", "MediaCommon\MediaCommon.csproj", "{D20F9EDF-ED99-449F-BD7E-36AC2227B102}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rtmp", "Rtmp", "{F0057332-AC27-4848-9B43-3D590B7E8C87}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RtmpCore", "Rtmp\RtmpCore\RtmpCore.csproj", "{113E1236-6D3C-4E2F-BE42-6A5B82D8A259}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RtmpClient", "Rtmp\RtmpClient\RtmpClient.csproj", "{39B58722-B35A-45B5-86D6-99FD739E54E3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RtmpServer", "Rtmp\RtmpServer\RtmpServer.csproj", "{A91D6963-9F9A-4BA8-B370-950D6BCC9F17}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{70C60099-FA49-468F-8877-A89E6CF6EF0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70C60099-FA49-468F-8877-A89E6CF6EF0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70C60099-FA49-468F-8877-A89E6CF6EF0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70C60099-FA49-468F-8877-A89E6CF6EF0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D20F9EDF-ED99-449F-BD7E-36AC2227B102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D20F9EDF-ED99-449F-BD7E-36AC2227B102}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D20F9EDF-ED99-449F-BD7E-36AC2227B102}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D20F9EDF-ED99-449F-BD7E-36AC2227B102}.Release|Any CPU.Build.0 = Release|Any CPU
+		{113E1236-6D3C-4E2F-BE42-6A5B82D8A259}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{113E1236-6D3C-4E2F-BE42-6A5B82D8A259}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{113E1236-6D3C-4E2F-BE42-6A5B82D8A259}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{113E1236-6D3C-4E2F-BE42-6A5B82D8A259}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39B58722-B35A-45B5-86D6-99FD739E54E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39B58722-B35A-45B5-86D6-99FD739E54E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39B58722-B35A-45B5-86D6-99FD739E54E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39B58722-B35A-45B5-86D6-99FD739E54E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A91D6963-9F9A-4BA8-B370-950D6BCC9F17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A91D6963-9F9A-4BA8-B370-950D6BCC9F17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A91D6963-9F9A-4BA8-B370-950D6BCC9F17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A91D6963-9F9A-4BA8-B370-950D6BCC9F17}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D20F9EDF-ED99-449F-BD7E-36AC2227B102} = {83E130AF-87CF-4BEC-B058-E43E22C60174}
+		{113E1236-6D3C-4E2F-BE42-6A5B82D8A259} = {F0057332-AC27-4848-9B43-3D590B7E8C87}
+		{39B58722-B35A-45B5-86D6-99FD739E54E3} = {F0057332-AC27-4848-9B43-3D590B7E8C87}
+		{A91D6963-9F9A-4BA8-B370-950D6BCC9F17} = {F0057332-AC27-4848-9B43-3D590B7E8C87}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {35CA9B1F-9FE0-4D61-8481-F438CED1BB05}
+	EndGlobalSection
+EndGlobal
