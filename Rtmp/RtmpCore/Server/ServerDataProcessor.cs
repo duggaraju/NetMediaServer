@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using RtmpCore.Amf;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RtmpCore
@@ -53,13 +55,16 @@ namespace RtmpCore
             };
             _session.MetaData = new byte[metadata.GetLength()];
             metadata.Encode(_session.MetaData.Span);
-            _session.AudioCodec = new AudioCodecInfo
+            if (((IDictionary<string, object>)dataObj).ContainsKey("audiocodecid"))
             {
-                CodecId = (int) dataObj.audiocodecid,
-                Channels = dataObj.stereo ? 2 : 1,
-                Samplerate = (int) dataObj.audiosamplerate,
-                Bitrate = (int) dataObj.audiodatarate
-            };
+                _session.AudioCodec = new AudioCodecInfo
+                {
+                    CodecId = (int)dataObj.audiocodecid,
+                    Channels = dataObj.stereo ? 2 : 1,
+                    Samplerate = (int)dataObj.audiosamplerate,
+                    Bitrate = (int)dataObj.audiodatarate
+                };
+            }
             _session.VideoCodec = new VideoCodecInfo
             {
                 CodecId = (int) dataObj.videocodecid,

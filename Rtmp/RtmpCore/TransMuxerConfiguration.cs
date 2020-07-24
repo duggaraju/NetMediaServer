@@ -4,7 +4,7 @@
     {
         public string Ffmpeg { get; set; } = "ffmpeg.exe";
 
-        public string GloblArguments { get; set; } = string.Empty;
+        public string GlobalArguments { get; set; } = string.Empty;
 
         public string MediaDirectory { get; set; } = "media";
 

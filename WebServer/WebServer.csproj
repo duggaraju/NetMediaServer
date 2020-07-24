@@ -22,4 +22,8 @@
     <ProjectReference Include="..\Rtmp\RtmpCore\RtmpCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\dash.html" />
+  </ItemGroup>
+
 </Project>

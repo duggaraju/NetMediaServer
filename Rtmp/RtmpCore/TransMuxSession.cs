@@ -52,7 +52,7 @@ namespace RtmpCore
             var config = _muxConfig.Value;
             using var process = new Process();
             process.StartInfo.FileName = config.Ffmpeg;
-            process.StartInfo.Arguments = $"{config.GloblArguments}-i rtmp://localhost:{_rtmpConfig.Value.Port}{args.StreamPath} -c:v {config.VideoCodec} -c:a {config.AudioCodec} -f dash {config.DashParameters}  http://localhost:5000{args.StreamPath}.mpd";
+            process.StartInfo.Arguments = $"{config.GlobalArguments} -i rtmp://localhost:{_rtmpConfig.Value.Port}{args.StreamPath} -c:v {config.VideoCodec} -c:a {config.AudioCodec} -f dash {config.DashParameters}  http://localhost:5000{args.StreamPath}.mpd";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.EnableRaisingEvents = true;

@@ -33,17 +33,24 @@ namespace WebServer
 
             app.UseRouting();
             app.UseCors();
+            app.UseStaticFiles("/player");
             app.UseEndpoints(endpoints =>
             {
                 var cache = endpoints.ServiceProvider.GetService<IMemoryCache>();
-                var streaming = new DashStreamingHandler(cache, loggerFactory.CreateLogger<DashStreamingHandler>());
-                endpoints.MapGet("/{**rest}", async context =>
+                var hls = new HlsStreamingHandler(cache, loggerFactory.CreateLogger<HlsStreamingHandler>());
+                endpoints.MapGet("/live/{manifest}.m3u8", async context =>
                 {
-                    await streaming.InvokeAsync(context);
+                    await hls.InvokeAsync(context);
+                }).RequireCors(builder => builder.AllowAnyOrigin());
+
+                var dash = new DashStreamingHandler(cache, loggerFactory.CreateLogger<DashStreamingHandler>());
+                endpoints.MapGet("/live/{**rest}", async context =>
+                {
+                    await dash.InvokeAsync(context);
                 }).RequireCors(builder => builder.AllowAnyOrigin());
 
                 var ingest = new DashIngestHandler(cache, loggerFactory.CreateLogger<DashIngestHandler>());
-                endpoints.MapPost("/{**rest}", async context =>
+                endpoints.MapPost("/live/{**rest}", async context =>
                 {
                     await ingest.InvokeAsync(context);
                 });
