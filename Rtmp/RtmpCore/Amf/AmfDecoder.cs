@@ -1,7 +1,7 @@
 ﻿using System;
 using Amf0Data = System.ValueTuple<int, object>;
 
-namespace RtmpCore
+namespace RtmpCore.Amf
 {
     public abstract class AmfDecoder
     {

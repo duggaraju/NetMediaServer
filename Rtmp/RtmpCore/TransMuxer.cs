@@ -1,33 +1,36 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace RtmpCore
 {
-    public class TransMuxer
+    public class TransMuxer : IHostedService
     {
         private readonly RtmpContext _context;
-        private readonly IOptions<RtmpConfiguration> _rtmpConfig;
+        private readonly IOptions<ServerConfiguration> _rtmpConfig;
         private readonly IOptions<TransMuxerConfiguration> _muxConfig;
-        private CancellationTokenSource _source;
+        private readonly CancellationTokenSource _source = new CancellationTokenSource();
 
-        public TransMuxer(RtmpContext context, IOptions<RtmpConfiguration> rtmpConfig, IOptions<TransMuxerConfiguration> muxConfig)
+        public TransMuxer(RtmpContext context, IOptions<ServerConfiguration> rtmpConfig, IOptions<TransMuxerConfiguration> muxConfig)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _rtmpConfig = rtmpConfig ?? throw new ArgumentNullException(nameof(rtmpConfig));
             _muxConfig = muxConfig ?? throw new ArgumentNullException(nameof(muxConfig));
         }
 
-        public void Run(CancellationToken cancellationToken = default)
+        public Task StartAsync(CancellationToken _)
         {
-            if (_source != null) throw new InvalidOperationException("Run already called");
-            _source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _context.StreamPublished += OnStreamPublished;
-            cancellationToken.Register(() =>
-            {
-                _context.StreamPublished -= OnStreamPublished;
-            });
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken _)
+        {
+            _source.Cancel();
+            _context.StreamPublished -= OnStreamPublished;
+            return Task.CompletedTask;
         }
 
         private void OnStreamPublished(object sender, RtmpContext.RtmpEventArgs args)

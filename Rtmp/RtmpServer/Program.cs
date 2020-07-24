@@ -1,37 +1,37 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using RtmpCore;
 
 namespace RTMPServer
 {
     class Program
     {
-        const int DefaultPort = 1935;
-
         static async Task Main(string[] args)
         {
-            var loggerFactory = LoggerFactory.Create(configure => configure.AddConsole(configure => configure.LogToStandardErrorThreshold  = LogLevel.Error));
-            RtmpLogging.Initialize(loggerFactory);
-            using (var cts = new CancellationTokenSource())
-            {
-                Console.CancelKeyPress += (e, args) => cts.Cancel();
-                Console.WriteLine("Press Ctrl+C to exit...");
-                await RunServerAsync(cts.Token);
-            }
-        }
+            var host = new HostBuilder()
+                .ConfigureAppConfiguration(configure =>
+                {
+                    configure.AddJsonFile("appsettings.json");
+                    configure.AddCommandLine(args);
+                })
+                .ConfigureLogging(configure => configure.AddConsole())
+                .ConfigureServices((hostbuilder, services) =>
+                {
+                    services.Configure<ServerConfiguration>(hostbuilder.Configuration.GetSection("rtmp"));
+                    services.Configure<TransMuxerConfiguration>(hostbuilder.Configuration.GetSection("muxer"));
+                    services.AddHostedService<RtmpServer>();
+                    services.AddHostedService<TransMuxer>();
+                    services.AddSingleton<RtmpContext>();
+                })
+                .UseConsoleLifetime()
+                .Build();
 
-        private static async Task RunServerAsync(CancellationToken cancellationToken)
-        {
-            var rtmpConfig = Options.Create(new RtmpConfiguration());
-            var muxConfig = Options.Create(new TransMuxerConfiguration());
-            var context = new RtmpContext();
-            var server = new RtmpServer(context, rtmpConfig);
-            var transmux = new TransMuxer(context, rtmpConfig, muxConfig);
-            transmux.Run(cancellationToken);
-            await server.RunAsync();
+            Console.WriteLine("Press Ctrl+C to exit...");
+            await host.RunAsync();
         }
     }
 }

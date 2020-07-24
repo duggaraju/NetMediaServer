@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 
-namespace RtmpCore
+namespace RtmpCore.Amf
 {
     abstract public class AmfMessage
     {

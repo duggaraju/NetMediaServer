@@ -5,7 +5,7 @@ using System.Dynamic;
 using System.Text;
 using AmfObject = System.ValueTuple<int, object>;
 
-namespace RtmpCore
+namespace RtmpCore.Amf
 {
     /// <summary>
     /// An AMF0 Message decoder based on https://www.adobe.com/content/dam/acom/en/devnet/pdf/amf0-file-format-specification.pdf

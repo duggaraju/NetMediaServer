@@ -1,6 +1,6 @@
 ﻿namespace RtmpCore
 {
-    public class RtmpConfiguration
+    public class ServerConfiguration
     {
         public int ChunkLength { get; set; }
 

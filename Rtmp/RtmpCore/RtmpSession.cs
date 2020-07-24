@@ -1,65 +1,56 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace RtmpCore
 {
-    public class RtmpSession
+    public abstract class RtmpSession
     {
         const byte RtmpVersion = 3;
         const int RtmpHandshakeSize = 1536;
 
-        private readonly RtmpContext _context;
         private readonly TcpClient _client;
         private readonly Pipe _pipe;
         private readonly NetworkStream _networkStream;
-        private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<RtmpSession>();
+        private readonly RtmpMessageParser _messageParser;
         private readonly RtmpMessageWriter _writer;
-        private readonly RtmpCommandProcessor _commandProcessor;
-        private bool _keyFrameSent = false;
+        private readonly RtmpEventProcessor _eventProcessor = new RtmpEventProcessor();
 
-        public Queue<RtmpMessage> RtmpGopCacheQueue { get; } = null;
+        protected readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<ServerSession>();
+        protected readonly RtmpControlMessageProcessor _controlMessageProcessor;
 
         public Guid Id { get; }
 
         public int IncomingChunkLength { get; internal set; } = RtmpChunk.DefaultChunkBodyLength;
 
         public int OutgoingChunkLength { get; internal set; } = RtmpChunk.DefaultChunkBodyLength;
-        
+
         public int WindowAcknowledgementSize { get; internal set; }
 
-        public RtmpNetStream PublishStream { get; internal set; }
+        public RtmpStream PublishStream { get; internal set; }
 
-        public RtmpNetStream PlayStream { get; internal set; }
+        public RtmpStream PlayStream { get; internal set; }
 
         public bool IsPublishing => PublishStream != null;
 
         public bool IsPlaying => PlayStream != null;
 
-        public Memory<byte> MetaData { get; internal set; }
-        
-        public AudioCodecInfo AudioCodec { get; internal set; }
-
-        public VideoCodecInfo VideoCodec { get; internal set; }
-
-        public RtmpSession(RtmpContext context, TcpClient client)
+        public RtmpSession(TcpClient client)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
             _client = client ?? throw new ArgumentNullException(nameof(client));
+            Id = Guid.NewGuid();
             _pipe = new Pipe();
             _networkStream = _client.GetStream();
             _writer = new RtmpMessageWriter(this, _networkStream);
-            _commandProcessor = new RtmpCommandProcessor(context, this);
-            Id = Guid.NewGuid();
-            context.Sessions.Add(Id, this);
+            _controlMessageProcessor = new RtmpControlMessageProcessor(this);
+            _messageParser = new RtmpMessageParser(this);
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public async Task RunAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -72,11 +63,6 @@ namespace RtmpCore
             {
                 _logger.LogInformation($"RTMP session complete {Id}");
                 _client.Close();
-                _context.Sessions.Remove(Id);
-                if (IsPlaying)
-                    _context.RemovePlayer(IsPublishing ? PublishStream.Path : PlayStream.Path, Id);
-                else if (IsPublishing)
-                    _context.RemovePublisher(PublishStream.Path);
             }
         }
 
@@ -169,85 +155,55 @@ namespace RtmpCore
         /// </summary>
         /// <param name="message">The Rtmp message to send.</param>
         /// <returns></returns>
-        public async Task SendMessageAsync(RtmpMessage message)
+        public virtual async Task SendMessageAsync(RtmpMessage message)
         {
-            if (IsPlaying)
-            {
-                if (!_keyFrameSent && message.Message.MessageType == RtmpMessageType.Video)
-                {
-                    var frame_type = (message.Payload.Span[0] >> 4) & 0x0f;
-                    _keyFrameSent = frame_type == 1;
-                }
-                if (!_keyFrameSent &&
-                    (message.Message.MessageType == RtmpMessageType.Audio || message.Message.MessageType == RtmpMessageType.Video))
-                {
-                    //return;
-                }
-            }
             await _writer.ProcessMessageAsync(message);
-        }
-
-        public async Task SendStartToAllPlayersAsync()
-        {
-            var players = _context.GetPlayers(PublishStream.Path);
-            foreach (var player in players)
-            {
-                await player.SendStartAsync(this);
-            }
-        }
-
-        private async Task SendStartAsync(RtmpSession publishser)
-        {
-            await _commandProcessor.OnStartPlayAsync(publishser, PlayStream);
-        }
-
-        public async Task SendToAllPalyersAsync(RtmpMessage message)
-        {
-            var players = _context.GetPlayers(PublishStream.Path);
-            foreach (var player in players)
-            {
-                var stream = player.PlayStream;
-                var header = message.Header;
-                var messageHeader = message.Message.Translate(stream.Id);
-                var playerMessage = new RtmpMessage(header, messageHeader, message.Payload);
-                try
-                {
-                    await player.SendMessageAsync(playerMessage);
-                }
-                catch (Exception ex)
-                {
-                    //remove failing player.
-                    _logger.LogError(ex, $"Failed to send to player {player.Id}");
-                    _context.RemovePlayer(PublishStream.Path, player.Id);
-                }
-            }
         }
 
         private async Task ParseChunksAsync(PipeReader reader, CancellationToken cancellationToken)
         {
-            var messageWriter = new RtmpMessageWriter(this, _networkStream);
-            var processor = new RtmpMessageProcessor(
-                _commandProcessor,
-                new RtmpControlMessageProcessor(_context, this),
-                new RtmpDataProcessor(_context, this),
-                new RtmpMediaProcessor(_context, this),
-                new RtmpEventProcessor());
-            var messageParser = new RtmpMessageParser(this, processor);
-            await messageParser.ParseMessagesAsync(reader, cancellationToken);
+            await _messageParser.ParseMessagesAsync(reader, cancellationToken);
         }
 
-        public async Task SendStopToAllPlayersAsync()
+        public Task DispatchMessageAsync(RtmpMessage message)
         {
-            var players = _context.GetPlayers(PublishStream.Path);
-            foreach (var player in players)
+            switch (message.Message.MessageType)
             {
-                await player.SendStopAsync(this);
+                case RtmpMessageType.SetChunkSize:
+                case RtmpMessageType.Acknowledgement:
+                case RtmpMessageType.WindowAcknowledgementSize:
+                case RtmpMessageType.SetPeerBandwidth:
+                    return ProcessProtocolMessageAsync(message);
+                case RtmpMessageType.CommandAMF0:
+                case RtmpMessageType.CommandAMF3:
+                    return ProcessCommandMessageAsync(message);
+                case RtmpMessageType.DataAMF0:
+                case RtmpMessageType.DataAMF3:
+                    return ProcessDataMessageAsync(message);
+                case RtmpMessageType.Audio:
+                case RtmpMessageType.Video:
+                    return ProcessMediaMessageAsync(message);
+                case RtmpMessageType.UserCtrlMessage:
+                    return ProcessUserControlMessageAsync(message);
+                default:
+                    throw new Exception($"Unknown message of type: {message.Message.MessageType}");
             }
         }
 
-        public async Task SendStopAsync(RtmpSession publisher)
+        protected virtual async Task ProcessProtocolMessageAsync(RtmpMessage message)
         {
-            await _commandProcessor.OnStopPlayAsync(publisher, PlayStream);
+            await _controlMessageProcessor.ProcessMessageAsync(message);
         }
+
+        protected virtual async Task ProcessUserControlMessageAsync(RtmpMessage message)
+        {
+            await _eventProcessor.ProcessMessageAsync(message);
+        }
+
+        protected abstract Task ProcessCommandMessageAsync(RtmpMessage message);
+
+        protected abstract Task ProcessDataMessageAsync(RtmpMessage message);
+
+        protected abstract Task ProcessMediaMessageAsync(RtmpMessage message);
     }
 }

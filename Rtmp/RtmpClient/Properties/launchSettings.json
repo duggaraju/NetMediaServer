@@ -2,7 +2,7 @@
   "profiles": {
     "RtmpClient": {
       "commandName": "Project",
-      "commandLineArgs": "localhost"
+      "commandLineArgs": "--rtmp.server rtmp://localhost/live/test"
     }
   }
 }

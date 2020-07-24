@@ -5,16 +5,14 @@ using System.Threading.Tasks;
 
 namespace RtmpCore
 {
-    class RtmpControlMessageProcessor : IRtmpMessageProcessor
+    public class RtmpControlMessageProcessor : IRtmpMessageProcessor
     {
-        private readonly RtmpContext _context;
         private readonly RtmpSession _sesion;
         private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<RtmpControlMessageProcessor>();
 
-        public RtmpControlMessageProcessor(RtmpContext context, RtmpSession session)
+        public RtmpControlMessageProcessor(RtmpSession session)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-            _sesion = session ?? throw new ArgumentNullException(nameof(context));
+            _sesion = session ?? throw new ArgumentNullException(nameof(session));
         }
 
         public Task ProcessMessageAsync(RtmpMessage message)

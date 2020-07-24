@@ -1,5 +1,5 @@
 ﻿
-namespace RtmpCore
+namespace RtmpCore.Amf
 {
     public enum AmfEncodingType
     {

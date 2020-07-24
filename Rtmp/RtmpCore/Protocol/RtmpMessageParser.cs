@@ -11,8 +11,6 @@ namespace RtmpCore
     public class RtmpMessageParser
     {
         private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<RtmpMessageParser>();
-
-        private readonly IRtmpMessageProcessor _messageProcessor;
         private readonly MemoryPool<byte> _memoryPool = MemoryPool<byte>.Shared;
         private readonly Dictionary<int, RtmpMessageEntry> _messageCache = new Dictionary<int, RtmpMessageEntry>();
         private readonly RtmpSession _session;
@@ -30,10 +28,9 @@ namespace RtmpCore
             public int BytesRemaining => Length - BytesRead;
         }
 
-        public RtmpMessageParser(RtmpSession session, IRtmpMessageProcessor messageProcessor)
+        public RtmpMessageParser(RtmpSession session)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
-            _messageProcessor = messageProcessor ?? throw new ArgumentNullException(nameof(messageProcessor));
         }
 
         public async Task ParseMessagesAsync(PipeReader reader, CancellationToken cancellationToken)
@@ -46,7 +43,7 @@ namespace RtmpCore
                     var messages = ParseMessages(reader, result.Buffer);
                     foreach (var message in messages)
                     {
-                        await _messageProcessor.ProcessMessageAsync(message);
+                        await _session.DispatchMessageAsync(message);
                         message.Dispose();
                     }
                 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RtmpCore
+namespace RtmpCore.Amf
 {
     public class AmfCommandMessage : AmfMessage
     {

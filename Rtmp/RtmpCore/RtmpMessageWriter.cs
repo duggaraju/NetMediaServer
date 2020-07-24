@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RtmpCore
 {
-    class RtmpMessageWriter : IRtmpMessageProcessor
+    public class RtmpMessageWriter : IRtmpMessageProcessor
     {
         private readonly Stream _stream;
         private readonly RtmpSession _session;

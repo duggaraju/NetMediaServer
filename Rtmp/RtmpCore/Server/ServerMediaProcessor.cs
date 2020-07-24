@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 
 namespace RtmpCore
 {
-    public class RtmpMediaProcessor : IRtmpMessageProcessor
+    public class ServerMediaProcessor : IRtmpMessageProcessor
     {
-        private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<RtmpMediaProcessor>();
+        private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<ServerMediaProcessor>();
         private readonly RtmpContext _context;
-        private readonly RtmpSession _session;
+        private readonly ServerSession _session;
 
-        public RtmpMediaProcessor(RtmpContext context, RtmpSession session)
+        public ServerMediaProcessor(RtmpContext context, ServerSession session)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _session = session ?? throw new ArgumentNullException(nameof(session));

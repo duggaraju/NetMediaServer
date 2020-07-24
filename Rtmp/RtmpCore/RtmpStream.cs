@@ -2,7 +2,7 @@
 
 namespace RtmpCore
 {
-    public class RtmpNetStream
+    public class RtmpStream
     {
         public string Name { get; }
 
@@ -10,7 +10,7 @@ namespace RtmpCore
 
         public string Path { get; set; }
 
-        public RtmpNetStream(int id, string name, string path)
+        public RtmpStream(int id, string name, string path)
         {
             Id = id;
             Name = name ?? throw new ArgumentNullException(nameof(name));

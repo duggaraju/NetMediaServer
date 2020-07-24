@@ -25,7 +25,7 @@ namespace RtmpCore
 
         public IDictionary<string, IList<Guid>> IdlePlayers { get; } = new Dictionary<string, IList<Guid>>();
 
-        public IDictionary<Guid, RtmpSession> Sessions { get; } = new Dictionary<Guid, RtmpSession>();
+        public IDictionary<Guid, ServerSession> Sessions { get; } = new Dictionary<Guid, ServerSession>();
 
         public event EventHandler<RtmpEventArgs> StreamPublished;
 
@@ -80,7 +80,7 @@ namespace RtmpCore
                 StreamUnpublished?.Invoke(this, new RtmpEventArgs(id, publishPath));
         }
 
-        public bool TryGetPublishser(string path, out RtmpSession publisher)
+        public bool TryGetPublishser(string path, out ServerSession publisher)
         {
             publisher = null;
             if (Publishsers.TryGetValue(path, out var sessionId) && Sessions.TryGetValue(sessionId, out publisher))
@@ -88,7 +88,7 @@ namespace RtmpCore
             return false;
         }
 
-        public IList<RtmpSession> GetPlayers(string path)
+        public IList<ServerSession> GetPlayers(string path)
         {
             if (Players.TryGetValue(path, out var players))
             {
@@ -99,7 +99,7 @@ namespace RtmpCore
                 }).Where(session => session != null).ToList();
             }
 
-            return Array.Empty<RtmpSession>();
+            return Array.Empty<ServerSession>();
         }
     }
 }

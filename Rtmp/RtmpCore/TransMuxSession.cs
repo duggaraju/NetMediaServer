@@ -15,10 +15,10 @@ namespace RtmpCore
     public class TransMuxSession
     {
         private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<TransMuxSession>();
-        private readonly IOptions<RtmpConfiguration> _rtmpConfig;
+        private readonly IOptions<ServerConfiguration> _rtmpConfig;
         private readonly IOptions<TransMuxerConfiguration> _muxConfig;
 
-        public TransMuxSession(IOptions<RtmpConfiguration> rtmpConfig, IOptions<TransMuxerConfiguration> muxConfig)
+        public TransMuxSession(IOptions<ServerConfiguration> rtmpConfig, IOptions<TransMuxerConfiguration> muxConfig)
         {
             _rtmpConfig = rtmpConfig ?? throw new ArgumentNullException(nameof(rtmpConfig));
             _muxConfig = muxConfig ?? throw new ArgumentNullException(nameof(muxConfig));
