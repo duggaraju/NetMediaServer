@@ -42,11 +42,10 @@ namespace RtmpCore
             var resultCommand = new AmfCommandMessage
             {
                 Name = "onStatus",
-                Data = new
+                TransactionId = 0,
+                AdditionalArguments = 
                 {
-                    transId = 0,
-                    cmdObj = (object)null,
-                    info = new
+                    new
                     {
                         level = level,
                         code = code,
@@ -87,7 +86,7 @@ namespace RtmpCore
             var response = new AmfCommandMessage
             {
                 Name = "_result",
-                Data = data
+                CommandObject = data
             };
             var length = response.GetLength();
             var memory = new byte[length];

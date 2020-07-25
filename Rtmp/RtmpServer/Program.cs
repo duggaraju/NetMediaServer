@@ -23,9 +23,9 @@ namespace RTMPServer
                 {
                     services.Configure<ServerConfiguration>(hostbuilder.Configuration.GetSection("rtmp"));
                     services.Configure<TransMuxerConfiguration>(hostbuilder.Configuration.GetSection("muxer"));
-                    services.AddHostedService<RtmpServer>();
-                    services.AddHostedService<TransMuxer>();
                     services.AddSingleton<RtmpContext>();
+                    services.AddHostedService<RtmpServer>();
+                    // services.AddHostedService<TransMuxer>();
                 })
                 .UseConsoleLifetime()
                 .Build();

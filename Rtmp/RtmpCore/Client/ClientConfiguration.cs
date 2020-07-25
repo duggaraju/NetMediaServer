@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RtmpCore
+namespace RtmpCore.Client
 {
     public class ClientConfiguration
     {

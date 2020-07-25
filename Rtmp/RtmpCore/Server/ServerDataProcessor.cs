@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RtmpCore.Amf;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -32,7 +31,7 @@ namespace RtmpCore
                     await HandleMetadtataAsync(message, command);
                     break;
                 default:
-                    throw new InvalidOperationException($"Unknown command {command.Name} {command.Data} ");
+                    throw new InvalidOperationException($"Unknown command {command.Name} {command.AdditionalArguments} ");
             }
         }
 
@@ -43,14 +42,14 @@ namespace RtmpCore
 
         private async Task HandleSetDataFrame(AmfDataMessage command)
         {
-            _logger.LogInformation("Metadata found {0}", (object)command.Data);
-            var dataObj = command.Data.dataObj;
+            _logger.LogInformation("Metadata found {0}", command.AdditionalArguments);
+            var dataObj = (dynamic) command.AdditionalArguments[1];
             var metadata = new AmfDataMessage
             {
                 Name = "onMetaData",
-                Data = new
+                AdditionalArguments = 
                 {
-                    dataObj = dataObj
+                    dataObj
                 }
             };
             _session.MetaData = new byte[metadata.GetLength()];

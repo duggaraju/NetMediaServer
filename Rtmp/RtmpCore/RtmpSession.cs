@@ -19,11 +19,14 @@ namespace RtmpCore
         private readonly RtmpMessageParser _messageParser;
         private readonly RtmpMessageWriter _writer;
         private readonly RtmpEventProcessor _eventProcessor = new RtmpEventProcessor();
+        private int _transactionId = 0;
 
-        protected readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<ServerSession>();
+        protected readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<RtmpSession>();
         protected readonly RtmpControlMessageProcessor _controlMessageProcessor;
 
         public Guid Id { get; }
+
+        public int NextTrasactionId => ++_transactionId;
 
         public int IncomingChunkLength { get; internal set; } = RtmpChunk.DefaultChunkBodyLength;
 
@@ -57,7 +60,7 @@ namespace RtmpCore
                 await InitiateHandShakeAsync(cancellationToken);
                 var readTask = ReadDataAsync(_networkStream, _pipe.Writer, cancellationToken);
                 var parseTask = ParseChunksAsync(_pipe.Reader, cancellationToken);
-                await Task.WhenAll(readTask, parseTask);
+                await Task.WhenAny(readTask, parseTask);
             }
             finally
             {

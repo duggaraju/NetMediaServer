@@ -40,17 +40,21 @@ namespace RtmpCore
                 var result = await reader.ReadAsync(cancellationToken);
                 try
                 {
-                    var messages = ParseMessages(reader, result.Buffer);
-                    foreach (var message in messages)
+                    var position = TryParseChunk(reader, result.Buffer, out var chunk, out var messageEntry);
+                    if (position == null)
+                    {
+                        position = result.Buffer.Start;
+                    }
+                    else if (AssembleMessage(messageEntry, chunk, out var message))
                     {
                         await _session.DispatchMessageAsync(message);
                         message.Dispose();
                     }
+                    reader.AdvanceTo(position.Value);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to parse chunks");
-                    break;
                 }
 
                 if (result.IsCompleted)
@@ -58,48 +62,43 @@ namespace RtmpCore
             }
         }
 
-        private IEnumerable<RtmpMessage> ParseMessages(PipeReader reader, ReadOnlySequence<byte> buffer)
+        /// <summary>
+        /// Try and parse the next RTMP chunk and advance the reader. 
+        /// </summary>
+        /// <returns>true if chunk is available else false.</returns>
+        private SequencePosition? TryParseChunk(PipeReader reader, ReadOnlySequence<byte> buffer, out RtmpChunk chunk, out RtmpMessageEntry messageEntry)
         {
-            var messages = new List<RtmpMessage>();
             var sequenceReader = new SequenceReader<byte>(buffer);
-            var position = sequenceReader.Position;
-            while (sequenceReader.Remaining != 0)
-            {
-                if (!TryParseChunk(ref sequenceReader, out var chunk, out var messageEntry))
-                    break;
-                position = sequenceReader.Position;
-
-                AssembleMessage(messageEntry, chunk);
-
-                // if message is complete .. process it.
-                if (messageEntry.BytesRemaining == 0)
-                {
-                    var message = messageEntry.Message;
-                    _logger.LogInformation($"Parsed message :{message.Header}: Message: {message.Message}");
-                    messages.Add(message);
-                    messageEntry.BytesRead = 0;
-                    messageEntry.Message = null;
-                }
-
-            }
-            reader.AdvanceTo(position);
-            return messages;
+            if (!TryParseChunk(ref sequenceReader, out chunk, out messageEntry))
+                return null;
+            return sequenceReader.Position;
         }
 
-        private void AssembleMessage(RtmpMessageEntry messageEntry, RtmpChunk chunk)
+        private bool AssembleMessage(RtmpMessageEntry messageEntry, RtmpChunk chunk, out RtmpMessage message)
         {
-            var message = messageEntry.Message;
-            if (message == null)
+            message = null;
+            var currentMessage = messageEntry.Message;
+            if (currentMessage == null)
             {
                 var payload = _memoryPool.Rent(chunk.Message.Length);
-                message = new RtmpMessage(chunk.Header, chunk.Message, payload);
-                messageEntry.Message = message;
+                currentMessage = new RtmpMessage(chunk.Header, chunk.Message, payload);
+                messageEntry.Message = currentMessage;
             }
 
-            var memory = message.Payload.Slice(messageEntry.BytesRead, chunk.PayloadLength);
+            var memory = currentMessage.Payload.Slice(messageEntry.BytesRead, chunk.PayloadLength);
             var reader = new SequenceReader<byte>(chunk.Payload);
             reader.TryCopyTo(memory.Span);
             messageEntry.BytesRead += chunk.PayloadLength;
+            // if message is complete .. return it.
+            if (messageEntry.BytesRemaining == 0)
+            {
+                message = messageEntry.Message;
+                _logger.LogInformation($"Parsed message :{message.Header}: Message: {message.Message}");
+                messageEntry.BytesRead = 0;
+                messageEntry.Message = null;
+                return true;
+            }
+            return false;
         }
 
         private bool TryParseChunk(ref SequenceReader<byte> reader, out RtmpChunk chunk, out RtmpMessageEntry messageEntry)

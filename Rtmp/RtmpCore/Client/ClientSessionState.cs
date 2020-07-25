@@ -1,5 +1,5 @@
 ﻿
-namespace RtmpCore
+namespace RtmpCore.Client
 {
     public enum ClientSessionState
     {

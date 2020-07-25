@@ -70,7 +70,7 @@ namespace RtmpCore
                     return false;
                 MessageType = (RtmpMessageType) id;
                 if (!Enum.IsDefined(typeof(RtmpMessageType), id))
-                    throw new Exception("Hello!");
+                    throw new Exception($"Unknown Message type {id}!");
             }
             else
             {

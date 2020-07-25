@@ -1,5 +1,5 @@
 ﻿
-namespace RtmpCore.Session
+namespace RtmpCore.Client
 {
     public class StreamMetadata
     {

@@ -226,6 +226,8 @@ namespace RtmpCore.Amf
                 length += valueLength;
                 buffer = buffer.Slice(valueLength);
             }
+            EncodeUnicodeString(buffer, string.Empty);
+            buffer = buffer.Slice(2);
             buffer[0] = (byte)Amf0DataType.ObjectEnd;
             return length;
         }

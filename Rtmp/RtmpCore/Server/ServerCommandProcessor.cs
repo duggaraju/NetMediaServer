@@ -53,7 +53,7 @@ namespace RtmpCore
                 case "getStreamLength":
                     break;
                 default:
-                    throw new InvalidOperationException($"Unknown command {command.Name} {command.Data} ");
+                    throw new InvalidOperationException($"Unknown command {command.Name} {command.CommandObject} ");
             }
         }
 
@@ -69,7 +69,7 @@ namespace RtmpCore
 
         private async Task HandlePlayAsync(RtmpMessage message, AmfCommandMessage command)
         {
-            var streamName = command.Data.streamName;
+            var streamName = command.AdditionalArguments[0] as string;
             var streamPath = $"/{_application}/{streamName.Split("?")[0]}";
             var streamId = message.Message.StreamId;
             var stream = new RtmpStream(streamId, streamName, streamPath);
@@ -115,10 +115,10 @@ namespace RtmpCore
             var command = new AmfDataMessage
             {
                 Name = "|RtmpSampleAccess",
-                Data = new
+                AdditionalArguments = 
                 {
-                    bool1 = false,
-                    bool2 = false
+                    false,
+                    false
                 }
             };
             await SendDataMessageAsync(0, command);
@@ -190,7 +190,7 @@ namespace RtmpCore
                 await SendStatusMessageAsync(_session.PlayStream.Id, "status", "NetStream.Play.Stop", "Stopped playing stream.");
 
             }
-            if (_session.IsPublishing && command.Data.streamId == _session.PublishStream.Id)
+            if (_session.IsPublishing)
             {
                 var stream = _session.PublishStream;
                 _logger.LogInformation($@"[rtmp publish] Close stream. id ={_session.Id}
@@ -212,7 +212,7 @@ namespace RtmpCore
 
         private async Task HandlePublishStreamAsync(RtmpMessage message, AmfCommandMessage command)
         {
-            var streamName = command.Data.streamName;
+            var streamName = command.AdditionalArguments[0] as string;
             var streamPath = $"/{_application}/{streamName}";
             var streamId = (int)message.Message.StreamId;
             var stream = new RtmpStream(streamId, streamName, streamPath);
@@ -248,19 +248,15 @@ namespace RtmpCore
             var resultCommand = new AmfCommandMessage
             {
                 Name = "_result",
-                Data = new
-                {
-                    transId = command.Data.transId,
-                    cmdObj = (object) null,
-                    info = _streams
-                }
+                TransactionId = command.TransactionId,
+                AdditionalArguments = { _streams }
             };
             await SendCommandMessageAsync(0, resultCommand);
         }
 
         private async Task HandleConnectAsync(AmfCommandMessage command)
         {
-            _application = command.Data.cmdObj.app;
+            _application = command.CommandObject.app;
             await SendWindowAckSizeAsync(RtmpConstants.DefaultWindowAckSize);
             await SetPeerBandwidthAsync(RtmpConstants.DefaultWindowAckSize);
             await SetChunkSizeAsync(RtmpChunk.DefaultChunkBodyLength);
@@ -268,15 +264,15 @@ namespace RtmpCore
             var resultCommand = new AmfCommandMessage
             {
                 Name = "_result",
-                Data = new
+                TransactionId = command.TransactionId,
+                CommandObject = new
                 {
-                    transId = command.Data.transId,
-                    cmdObj = new
-                    {
-                        fmsVer = "FMS/3,0,1,123",
-                        capabilities = 31
-                    },
-                    info = new
+                    fmsVer = "FMS/3,0,1,123",
+                    capabilities = 31
+                },
+                AdditionalArguments = 
+                {
+                    new
                     {
                         level = "status",
                         code = "NetConnection.Connect.Success",

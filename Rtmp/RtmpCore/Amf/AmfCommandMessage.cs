@@ -5,6 +5,10 @@ namespace RtmpCore.Amf
 {
     public class AmfCommandMessage : AmfMessage
     {
+        public int TransactionId { get; set; }
+
+        public dynamic CommandObject { get; set; }
+
         private static readonly Dictionary<string, string[]> _commands = new Dictionary<string, string[]>
         {
             { "_result", new[] { "transId", "cmdObj", "info"} },
@@ -32,11 +36,30 @@ namespace RtmpCore.Amf
             { "pause", new[] { "transId", "cmdObj", "pause", "ms" } }
         };
 
-        protected override string[] GetProperties()
+        protected override int GetPropertyCount()
         {
             if (_commands.TryGetValue(Name, out var properties))
-                return properties;
+                return properties.Length;
             throw new InvalidOperationException($"command {Name} not found");
+        }
+
+        protected override void SetProperty(int index, object value)
+        {
+            if (index == 0)
+                TransactionId = (int)(double)value;
+            else if (index == 1)
+                CommandObject = value;
+            else
+                base.SetProperty(index, value);
+        }
+
+        protected override object GetProperty(int index)
+        {
+            if (index == 0)
+                return TransactionId;
+            if (index == 1)
+                return CommandObject;
+            return base.GetProperty(index - 2);
         }
     }
 }

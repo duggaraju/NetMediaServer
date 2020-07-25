@@ -13,10 +13,10 @@ namespace RtmpCore.Amf
             {  "|RtmpSampleAccess", new[] {"bool1", "bool2" } },
         };
 
-        protected override string[] GetProperties()
+        protected override int GetPropertyCount()
         {
             if (_commands.TryGetValue(Name, out var properties))
-                return properties;
+                return properties.Length;
             throw new InvalidOperationException($"command {Name} not found");
         }
     }
