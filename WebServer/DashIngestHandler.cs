@@ -12,7 +12,7 @@ namespace WebServer
     [MemoryDiagnoser]
     public class DashIngestHandler
     {
-        const int BUFFER_SIZE = 16 * 1024;
+        const int BUFFER_SIZE = 64 * 1024;
         private readonly MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
         private readonly IMemoryCache _cache;
         const string ManifestContentType = "application/dash+xml";
@@ -29,7 +29,7 @@ namespace WebServer
         [Benchmark]
         public async Task InvokeAsync(HttpContext context)
         {
-            _logger.LogInformation(
+            _logger.LogDebug(
                 $"{context.Request.Method} {context.Request.Path} type: {context.Request.ContentType}  size: {context.Request.Headers.ContentLength}  Encoding:{context.Request.Headers["Transfer-Encoding"]}");
 
             var options = new MemoryCacheEntryOptions();
@@ -38,8 +38,6 @@ namespace WebServer
             var expire = false;
             if (path.Contains("/chunk"))
             {
-                _logger.LogInformation(
-                    $"Chunk {context.Request.Path} size: {context.Request.Headers.ContentLength}  Encoding:{context.Request.Headers["Transfer-Encoding"]}");
                 contentType = CmafSegmentContentType;
                 options.SetSlidingExpiration(TimeSpan.FromSeconds(60));
                 expire = true;

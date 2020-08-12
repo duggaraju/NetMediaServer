@@ -37,10 +37,10 @@ namespace WebServer
         {
             response.StatusCode = 200;
             var length = mediaSegment.Length;
-            if (length != 0)
+            if (mediaSegment.Complete)
             {
                 response.ContentLength = mediaSegment.Length;
-                _logger.LogWarning($"Sending segment for {mediaSegment.Path} length:{length} complete: {mediaSegment.Complete}");
+                _logger.LogWarning($"Sending full response for {mediaSegment.Path} length:{mediaSegment.Length} ");
             }
             else
             {
@@ -53,7 +53,7 @@ namespace WebServer
                 NoStore = true
             };
 
-            await foreach (var index in mediaSegment.GetBufferIndexAsync())
+            foreach (var index in mediaSegment.GetBufferIndex())
             {
                 var cacheKey = mediaSegment.GetChunkKey(index);
                 var buffer = _cache.Get<MediaBuffer>(cacheKey);

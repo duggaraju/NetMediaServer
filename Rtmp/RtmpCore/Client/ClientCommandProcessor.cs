@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using RtmpCore.Amf;
+﻿using RtmpCore.Amf;
 using System;
 using System.Threading.Tasks;
 

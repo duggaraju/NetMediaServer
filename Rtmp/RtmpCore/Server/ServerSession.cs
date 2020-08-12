@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace RtmpCore
 {
@@ -14,6 +15,7 @@ namespace RtmpCore
         private readonly ServerDataProcessor _dataProcessor;
         private readonly ServerMediaProcessor _mediaProcessor;
         private bool _keyFrameSent = false;
+        private readonly IOptions<ServerConfiguration> _configuration;
 
         public Queue<RtmpMessage> RtmpGopCacheQueue { get; } = null;
 
@@ -23,12 +25,14 @@ namespace RtmpCore
 
         public VideoCodecInfo VideoCodec { get; internal set; }
 
-        public ServerSession(RtmpContext context, TcpClient client) : base(client)
+        public ServerSession(RtmpContext context, IOptions<ServerConfiguration> configuration, TcpClient client) : base(client)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _commandProcessor = new ServerCommandProcessor(context, this);
             _dataProcessor = new ServerDataProcessor(context, this);
             _mediaProcessor = new ServerMediaProcessor(context, this);
+            OutgoingChunkLength = configuration.Value.ChunkLength;
             context.Sessions.Add(Id, this);
         }
 

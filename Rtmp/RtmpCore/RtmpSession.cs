@@ -46,6 +46,7 @@ namespace RtmpCore
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
             Id = Guid.NewGuid();
+            //var options = new PipeOptions(pauseWriterThreshold: 0x1FFFF);
             _pipe = new Pipe();
             _networkStream = _client.GetStream();
             _writer = new RtmpMessageWriter(this, _networkStream);
@@ -61,6 +62,7 @@ namespace RtmpCore
                 var readTask = ReadDataAsync(_networkStream, _pipe.Writer, cancellationToken);
                 var parseTask = ParseChunksAsync(_pipe.Reader, cancellationToken);
                 await Task.WhenAny(readTask, parseTask);
+                _logger.LogInformation($"session {Id} finished");
             }
             finally
             {
@@ -75,7 +77,7 @@ namespace RtmpCore
 
             while (true)
             {
-                // Allocate at least 512 bytes from the PipeWriter
+                // Allocate minimum bytes from the PipeWriter
                 var memory = writer.GetMemory(minimumBufferSize);
                 try
                 {
@@ -123,7 +125,7 @@ namespace RtmpCore
             var version = _networkStream.ReadByte();
             if (version != RtmpVersion)
             {
-                _logger.LogWarning("Unkown version {version}");
+                _logger.LogWarning($"Unknown RTMP version {version}");
             }
 
             var buffer = new byte[RtmpHandshakeSize];

@@ -13,5 +13,11 @@
         public string AudioCodec { get; set; } = "copy";
 
         public string DashParameters { get; set; } = "";
+
+        public int HttpPort { get; set; } = 80;
+
+        public bool RedirectStdOut { get; set; } = false;
+
+        public bool RedirectStdErr { get; set; } = false;
     }
 }

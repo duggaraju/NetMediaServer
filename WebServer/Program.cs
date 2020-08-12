@@ -32,7 +32,7 @@ namespace WebServer
                 services.AddSingleton<RtmpContext>();
                 services.Configure<ServerConfiguration>(context.Configuration.GetSection("rtmp"));
                 services.Configure<TransMuxerConfiguration>(context.Configuration.GetSection("muxer"));
-                services.AddHostedService<RtmpServer>();
+                //services.AddHostedService<RtmpServer>();
                 services.AddHostedService<TransMuxer>();
             });
             return hostBuilder;
@@ -44,6 +44,10 @@ namespace WebServer
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();
+                webBuilder.UseKestrel(options =>
+                {
+                    options.Limits.MinRequestBodyDataRate = null;
+                });
             });
     }
 }

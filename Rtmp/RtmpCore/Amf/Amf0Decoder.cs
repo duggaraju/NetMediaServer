@@ -214,7 +214,7 @@ namespace RtmpCore.Amf
 
         public static int EncodeObject(Span<byte> buffer, object data)
         {
-            var length = 2;
+            var length = 4;
             buffer[0] = (byte)Amf0DataType.Object;
             buffer = buffer.Slice(1);
             foreach (var property in data.GetType().GetProperties())

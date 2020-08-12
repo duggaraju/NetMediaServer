@@ -45,18 +45,23 @@ namespace MediaCommon
             _event.Set();
         }
 
-        public async IAsyncEnumerable<int> GetBufferIndexAsync()
+        public IEnumerable<int> GetBufferIndex(bool fail = false)
         {
             var i = 0;
+            do
+            {
+                while (i < _bufferCount)
+                    yield return i++;
+                if (_complete)
+                    break;
+                var got = _event.Wait(TimeSpan.FromMilliseconds(50));
+                if (!got && fail)
+                    throw new TimeoutException();
+            }
+            while (!_complete);
+
             while (i < _bufferCount)
                 yield return i++;
-            while (!_complete)
-            {
-                _logger.LogDebug($"${Path} is incomplete, waiting for more buffers to arrive ...");
-                var got = _event.Wait(TimeSpan.FromMilliseconds(100));
-                if (got && i < _bufferCount)
-                    yield return i++;
-            }
         }
     }
 }

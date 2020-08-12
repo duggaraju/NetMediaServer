@@ -14,12 +14,14 @@ namespace RtmpCore
         private readonly IOptions<ServerConfiguration> _configuration;
         private TcpListener _listener;
         private readonly CancellationTokenSource _source = new CancellationTokenSource();
+        private readonly ILogger _logger;
 
         public RtmpServer(RtmpContext context, IOptions<ServerConfiguration> configuration, ILoggerFactory loggerFactory)
         {
             RtmpLogging.Initialize(loggerFactory);
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = loggerFactory.CreateLogger<RtmpServer>();
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -42,7 +44,8 @@ namespace RtmpCore
             while (!cancellationToken.IsCancellationRequested)
             {
                 var client = await _listener.AcceptTcpClientAsync();
-                var session = new ServerSession(_context, client);
+                _logger.LogInformation("Recevied connection from ", client.Client.RemoteEndPoint);
+                var session = new ServerSession(_context, _configuration, client);
                 _ = session.StartAsync(cancellationToken);
             }
         }

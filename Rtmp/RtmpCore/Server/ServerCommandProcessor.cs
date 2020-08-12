@@ -259,7 +259,7 @@ namespace RtmpCore
             _application = command.CommandObject.app;
             await SendWindowAckSizeAsync(RtmpConstants.DefaultWindowAckSize);
             await SetPeerBandwidthAsync(RtmpConstants.DefaultWindowAckSize);
-            await SetChunkSizeAsync(RtmpChunk.DefaultChunkBodyLength);
+            await SetChunkSizeAsync(_session.OutgoingChunkLength);
 
             var resultCommand = new AmfCommandMessage
             {

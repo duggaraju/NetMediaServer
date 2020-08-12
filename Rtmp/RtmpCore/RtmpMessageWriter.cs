@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace RtmpCore
@@ -11,18 +12,39 @@ namespace RtmpCore
         private readonly Stream _stream;
         private readonly RtmpSession _session;
         private readonly MemoryPool<byte> _memoryPool = MemoryPool<byte>.Shared;
+        private readonly Channel<RtmpMessage> _channel = Channel.CreateBounded<RtmpMessage>(10);
 
         public RtmpMessageWriter(RtmpSession session, Stream stream)
         {
             _session = session ?? throw new ArgumentException(nameof(session));
             _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            _ = SendMessagesAsync();
         }
+
+        public void Stop()
+        {
+            _channel.Writer.Complete();
+            _channel.Reader.Completion.Wait();
+        }
+
 
         public async Task ProcessMessageAsync(RtmpMessage message)
         {
-            var maxChunkLength = _session.OutgoingChunkLength + RtmpChunk.MaxHeaderLength;
+            await _channel.Writer.WriteAsync(message);
+        }
 
-            using var buffer = _memoryPool.Rent(maxChunkLength);
+        private async Task SendMessagesAsync()
+        {
+            while (await _channel.Reader.WaitToReadAsync())
+                while (_channel.Reader.TryRead(out var message))
+                    await SendMessageAsync(message);
+        }
+
+        private async Task SendMessageAsync(RtmpMessage message)
+        {
+            var chunkPayloadLength = Math.Min(message.Payload.Length, _session.OutgoingChunkLength);
+
+            using var buffer = _memoryPool.Rent(chunkPayloadLength + RtmpChunk.MaxHeaderLength);
             foreach (var chunk in ChunkMessage(message))
             {
                 var memory = buffer.Memory.Slice(0, chunk.Length);

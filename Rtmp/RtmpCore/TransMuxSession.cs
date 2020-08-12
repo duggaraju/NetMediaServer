@@ -17,6 +17,7 @@ namespace RtmpCore
         private readonly ILogger _logger = RtmpLogging.LoggerFactory.CreateLogger<TransMuxSession>();
         private readonly IOptions<ServerConfiguration> _rtmpConfig;
         private readonly IOptions<TransMuxerConfiguration> _muxConfig;
+        private Process _process;
 
         public TransMuxSession(IOptions<ServerConfiguration> rtmpConfig, IOptions<TransMuxerConfiguration> muxConfig)
         {
@@ -24,65 +25,93 @@ namespace RtmpCore
             _muxConfig = muxConfig ?? throw new ArgumentNullException(nameof(muxConfig));
         }
 
-
-        public Task RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
+        public void Stop()
         {
-            var source = new TaskCompletionSource<int>();
-            var process = new Process
+            if (_process != null)
             {
-                StartInfo = startInfo
-            };
-            process.EnableRaisingEvents = true;
-            cancellationToken.Register(() =>
-            {
-                process.Kill();
-                process.Dispose();
-                source.TrySetCanceled();
-            });
-            process.Exited += (sender, args) =>
-            {
-                source.SetResult(process.ExitCode);
-            };
-            return source.Task;
+                if (_process.HasExited)
+                    _logger.LogInformation($"ffmpeg exited with status code: {_process.ExitCode}");
+                else
+                {
+                    try
+                    {
+                        _process.Kill();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "failed to stop process");
+                    }
+                }
+                _process = null;
+            }
         }
 
-        public async Task StartAsync(RtmpEventArgs args, CancellationToken cancellationToken)
+        public void Start(RtmpEventArgs args, CancellationToken cancellationToken)
         {
-            var pipe = new Pipe();
             var config = _muxConfig.Value;
-            using var process = new Process();
-            process.StartInfo.FileName = config.Ffmpeg;
-            process.StartInfo.Arguments = $"{config.GlobalArguments} -i rtmp://localhost:{_rtmpConfig.Value.Port}{args.StreamPath} -c:v {config.VideoCodec} -c:a {config.AudioCodec} -f dash {config.DashParameters}  http://localhost:5000{args.StreamPath}.mpd";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.EnableRaisingEvents = true;
-            process.Start();
+            _process = new Process();
+            _process.StartInfo.FileName = config.Ffmpeg;
+            _process.StartInfo.Arguments = $"{config.GlobalArguments} -i rtmp://localhost:{_rtmpConfig.Value.Port}{args.StreamPath} -c:v {config.VideoCodec} -c:a {config.AudioCodec} -f dash {config.DashParameters}  http://localhost:{config.HttpPort}{args.StreamPath}.mpd";
+            _process.StartInfo.UseShellExecute = false;
+            if (config.RedirectStdOut)
+                _process.StartInfo.RedirectStandardOutput = true;
+            if (config.RedirectStdErr)
+                _process.StartInfo.RedirectStandardError = true;
+            _process.EnableRaisingEvents = true;
+            _logger.LogInformation($"Startin ffmpeg process {config.Ffmpeg} with command line: {_process.StartInfo.Arguments}");
+            try
+            {
+                _process.Start();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "failed to start ffmpeg {0} {1}", config.Ffmpeg, _process.StartInfo.Arguments);
+                throw;
+            }
 
-            var readTask = ReadFromStream(pipe.Writer, process.StandardOutput.BaseStream, cancellationToken);
-            var processTask = ProcessLogs(pipe.Reader, cancellationToken);
-            await Task.WhenAll(readTask, processTask);
-            _logger.LogInformation($"ffmpeg exited with status code: {process.ExitCode}");
+            if (config.RedirectStdOut)
+                _ = ProcessStreamAsync(_process.StandardOutput.BaseStream, cancellationToken);
+
+            if (config.RedirectStdErr)
+                _ = ProcessStreamAsync(_process.StandardError.BaseStream, cancellationToken);
+
+
+            _process.WaitForExit();
         }
 
-        private async Task ProcessLogs(PipeReader reader, CancellationToken cancellationToken)
+        private async Task ProcessStreamAsync(Stream stream, CancellationToken cancellationToken)
+        {
+            var stdOutPipe = new Pipe();
+            var readTask = ReadFromStream(stdOutPipe.Writer, stream, cancellationToken);
+            var processTask = ProcessLogs(stdOutPipe.Reader, cancellationToken);
+            await Task.WhenAll(readTask, processTask);
+        }
+
+        private async Task ProcessLogs(PipeReader reader, CancellationToken cancellationToken, bool stdOut = true)
         {
             while (true)
             {
                 var result = await reader.ReadAsync(cancellationToken);
                 try
                 {
-                    var position = result.Buffer.PositionOf((byte)'\n');
+                    var position = result.Buffer.PositionOf((byte)'\r');
                     if (position != null)
                     {
                         var line =  GetString(result.Buffer.Slice(0, position.Value));
-                        _logger.LogWarning("Transmux: {0}", line);
+                        if (stdOut)
+                            _logger.LogDebug("Ffmpeg out: {0}", line);
+                        else
+                            _logger.LogError("Ffmpeg err: {0}", line);
                         reader.AdvanceTo(position.Value);
                     }
-
+                    else
+                    {
+                        reader.AdvanceTo(result.Buffer.GetPosition(0));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to parse chunks");
+                    _logger.LogError(ex, "Failed to read from pipe");
                     break;
                 }
 
@@ -92,7 +121,7 @@ namespace RtmpCore
 
         }
 
-        private string GetString(ReadOnlySequence<byte> buffer)
+        private static string GetString(ReadOnlySequence<byte> buffer)
         {
             if (buffer.IsSingleSegment)
             {
@@ -134,8 +163,7 @@ namespace RtmpCore
                 }
 
                 // Make the data available to the PipeReader
-                FlushResult result = await writer.FlushAsync();
-
+                var result = await writer.FlushAsync();
                 if (result.IsCompleted)
                 {
                     break;

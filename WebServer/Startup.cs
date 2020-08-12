@@ -14,12 +14,12 @@ namespace WebServer
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddLogging(opt => opt.AddConsole(c => c.TimestampFormat = "[HH:mm:ss.fff] "));
             services.AddMemoryCache(cacheOptions => { });
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder => builder.AllowAnyOrigin());
             });
-            services.Configure<IISServerOptions>(options => options.AutomaticAuthentication = false);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -58,20 +58,23 @@ namespace RtmpCore
             {
                 _session.AudioCodec = new AudioCodecInfo
                 {
-                    CodecId = (int)dataObj.audiocodecid,
+                    CodecId = dataObj.audiocodecid is double ? (int) dataObj.audiocodecid : 0,
                     Channels = dataObj.stereo ? 2 : 1,
                     Samplerate = (int)dataObj.audiosamplerate,
                     Bitrate = (int)dataObj.audiodatarate
                 };
             }
-            _session.VideoCodec = new VideoCodecInfo
+            if (((IDictionary<string, object>)dataObj).ContainsKey("videocodecid"))
             {
-                CodecId = (int) dataObj.videocodecid,
-                Width = (int) dataObj.width,
-                Height = (int) dataObj.height,
-                Framerate = (int) dataObj.framerate,
-                Bitrate = (int) dataObj.videodatarate
-            };
+                _session.VideoCodec = new VideoCodecInfo
+                {
+                    CodecId = dataObj.videocodecid is double ? (int)dataObj.videocodecid : 0,
+                    Width = (int) dataObj.width,
+                    Height = (int) dataObj.height,
+                    Framerate = (int) dataObj.framerate,
+                    Bitrate = (int) dataObj.videodatarate
+                };
+            }
 
             var header = new RtmpChunkHeader(RtmpChunkHeaderType.Type0, RtmpConstants.RtmpChannel_Data);
             var messsageHeader = new RtmpMessageHeader(0, _session.MetaData.Length, RtmpMessageType.DataAMF0, 0);
