@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "Packager": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\media\\bingshort.mp4 D:\\temp\\output"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "commandLineArgs": "Packager.dll /mnt/d/media/bing.mp4 /mnt/d/temp/output",
+      "distributionName": ""
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

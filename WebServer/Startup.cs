@@ -14,7 +14,7 @@ namespace WebServer
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging(opt => opt.AddConsole(c => c.TimestampFormat = "[HH:mm:ss.fff] "));
+            services.AddLogging(opt => opt.AddSimpleConsole(c => c.TimestampFormat = "[HH:mm:ss.fff] "));
             services.AddMemoryCache(cacheOptions => { });
             services.AddCors(options =>
             {
